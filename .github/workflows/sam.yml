@@ -34,7 +34,10 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           dir_names: true
-          dir_names_max_depth: 1
+          dir_names_max_depth: 2
+          files: |
+            lambdas/**
+            layers/**
           matrix: true
       - name: List all changed files
         run: echo '${{ steps.changed-files.outputs.all_changed_files }}'
@@ -48,31 +51,66 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Test
-        run: |
-          echo ${{ matrix.dir }}
-      #  - uses: actions/setup-python@v3
-      #  - uses: aws-actions/setup-sam@v2
-      #    with:
-      #      use-installer: true
-      #      token: ${{ secrets.GITHUB_TOKEN }}
-      #  - name: configure aws credentials
-      #    uses: aws-actions/configure-aws-credentials@v4
-      #    with:
-      #      role-to-assume: "arn:aws:iam::${{env.ORG_ACCOUNT}}:role/imagen-terraform-modules-ci-writer"
-      #      aws-region: ${{ env.AWS_REGION }}
-      #  - run: |
-      #      sam build \
-      #        --use-container \
-      #        --template-file lambdas/lb-logs/template.yaml
-      #  - run: |
-      #      sam deploy \
-      #        --no-confirm-changeset \
-      #        --no-fail-on-empty-changeset \
-      #        --profile default \
-      #        --capabilities CAPABILITY_IAM \
-      #        --stack-name lb-logs-stack \
-      #        --region ********* \
-      #        --s3-bucket aisdev-sre-lambdas \
-      #        --s3-prefix lambdas/lb-logs \
-      #        --parameter-overrides ParameterKey=Env,ParameterValue=dev
+      - uses: actions/setup-python@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          if [[ "${{github.base_ref}}" == "master" || "${{github.ref}}" == "refs/heads/master" ]]; then
+            ENV=prod
+            echo "ENV=prod" >> "$GITHUB_ENV"
+          else
+            ENV=dev
+            echo "ENV=dev" >> "$GITHUB_ENV"
+          fi
+          CONFIG_FILE="${{ matrix.dir }}/config.ini"
+          if [ -f "$CONFIG_FILE" ]; then
+            ACCOUNTS_JSON=$(python3 .circleci/parse_config.py "$CONFIG_FILE" "$ENV")
+            for ACCOUNT in $(echo "$ACCOUNTS_JSON" | jq -r 'keys[]'); do
+              ROLE=$(echo "$ACCOUNTS_JSON" | jq -r --arg acc "$ACCOUNT" '.[$acc].role')
+              BUCKET=$(echo "$ACCOUNTS_JSON" | jq -r --arg acc "$ACCOUNT" '.[$acc].bucket')
+              TEMPLATE=$(echo "$ACCOUNTS_JSON" | jq -r --arg acc "$ACCOUNT" '.[$acc].template')
+
+              if [ -n "$BUCKET" ]; then
+                echo "SAM_DEPLOY_ARGS=''" >> "$GITHUB_ENV"
+              else
+                echo "BUCKET=$ACCOUNT-sre-lambdas" >> "$GITHUB_ENV"
+                echo "SAM_DEPLOY_ARGS=--s3-prefix=${{ matrix.dir }}" >> "$GITHUB_ENV"
+              fi
+
+              if [ -n "$TEMPLATE" ]; then
+                echo "TEMPLATE_NAME=$TEMPLATE" >> "$GITHUB_ENV"
+              else
+                echo "TEMPLATE_NAME=template.yaml" >> "$GITHUB_ENV"
+              fi
+
+              if [ -n "$ROLE" ]; then
+                echo "ROLE=$ROLE" >> "$GITHUB_ENV"
+              else
+                echo "$CONFIG_FILE is missing required field: 'role' for env: $ENV"
+              fi
+            done
+          else
+            echo "$CONFIG_FILE does not exist, skipping deploy for: ${{ matrix.dir }}"
+          fi
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: |
+          sam build \
+            --use-container \
+            --template-file ${{ matrix.dir }}/${{ env.TEMPLATE_NAME }}
+      - run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --profile default \
+            --capabilities CAPABILITY_IAM \
+            --stack-name (basename "${{ matrix.dir }}-stack") \
+            --region ${{ env.AWS_REGION }} \
+            --s3-bucket ${{ env.BUCKET }} \
+            --parameter-overrides ParameterKey=Env,ParameterValue=${{ env.ENV }} \
+            ${{ env.SAM_DEPLOY_ARGS }}
