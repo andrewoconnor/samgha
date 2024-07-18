@@ -51,9 +51,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Print lambda dir
-        run: |
-          echo ${{ matrix.dir }}
       - uses: actions/setup-python@v3
       - uses: aws-actions/setup-sam@v2
         with:
@@ -61,8 +58,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           if [[ "${{github.base_ref}}" == "master" || "${{github.ref}}" == "refs/heads/master" ]]; then
+            ENV=prod
             echo "ENV=prod" >> "$GITHUB_ENV"
           else
+            ENV=dev
             echo "ENV=dev" >> "$GITHUB_ENV"
           fi
           CONFIG_FILE="${{ matrix.dir }}/config.ini"
@@ -74,7 +73,7 @@ jobs:
               TEMPLATE=$(echo "$ACCOUNTS_JSON" | jq -r --arg acc "$ACCOUNT" '.[$acc].template')
 
               if [ -n "$BUCKET" ]; then
-                SAM_DEPLOY_ARGS=""
+                echo "SAM_DEPLOY_ARGS=''" >> "$GITHUB_ENV"
               else
                 echo "BUCKET=$ACCOUNT-sre-lambdas" >> "$GITHUB_ENV"
                 echo "SAM_DEPLOY_ARGS=--s3-prefix=${{ matrix.dir }}" >> "$GITHUB_ENV"
@@ -113,5 +112,5 @@ jobs:
             --stack-name (basename "${{ matrix.dir }}-stack") \
             --region ${{ env.AWS_REGION }} \
             --s3-bucket ${{ env.BUCKET }} \
-            --s3-prefix ${{ matrix.dir }} \
-            --parameter-overrides ParameterKey=Env,ParameterValue=${{ env.ENV }}
+            --parameter-overrides ParameterKey=Env,ParameterValue=${{ env.ENV }} \
+            ${{ env.SAM_DEPLOY_ARGS }}
