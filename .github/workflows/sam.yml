@@ -1,0 +1,78 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambdas/**'
+      - 'layers/**'
+  pull_request:
+    paths:
+      - 'lambdas/**'
+      - 'layers/**'
+
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  AWS_REGION: "us-east-1"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  changed-files:
+    name: Get changed dirs
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-files.outputs.all_changed_files }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          dir_names: true
+          dir_names_max_depth: 1
+          matrix: true
+      - name: List all changed files
+        run: echo '${{ steps.changed-files.outputs.all_changed_files }}'
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.changed-files.outputs.matrix) }}
+    needs:
+      - changed-files
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test
+        run: |
+          echo ${{ matrix.dir }}
+      #  - uses: actions/setup-python@v3
+      #  - uses: aws-actions/setup-sam@v2
+      #    with:
+      #      use-installer: true
+      #      token: ${{ secrets.GITHUB_TOKEN }}
+      #  - name: configure aws credentials
+      #    uses: aws-actions/configure-aws-credentials@v4
+      #    with:
+      #      role-to-assume: "arn:aws:iam::${{env.ORG_ACCOUNT}}:role/imagen-terraform-modules-ci-writer"
+      #      aws-region: ${{ env.AWS_REGION }}
+      #  - run: |
+      #      sam build \
+      #        --use-container \
+      #        --template-file lambdas/lb-logs/template.yaml
+      #  - run: |
+      #      sam deploy \
+      #        --no-confirm-changeset \
+      #        --no-fail-on-empty-changeset \
+      #        --profile default \
+      #        --capabilities CAPABILITY_IAM \
+      #        --stack-name lb-logs-stack \
+      #        --region ********* \
+      #        --s3-bucket aisdev-sre-lambdas \
+      #        --s3-prefix lambdas/lb-logs \
+      #        --parameter-overrides ParameterKey=Env,ParameterValue=dev
