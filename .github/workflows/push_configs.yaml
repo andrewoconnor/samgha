@@ -1,14 +1,9 @@
 name: Upload config files to account specific S3 buckets
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "config/osprod/**"
   pull_request:
     paths:
-      - "config/aisdev/**"
+      - "config/**"
 
 env:
   AWS_REGION: "us-east-1"
