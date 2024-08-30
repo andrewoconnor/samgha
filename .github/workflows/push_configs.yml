@@ -24,4 +24,4 @@ jobs:
 
       - name: Print Paths
         run: |
-          echo "${{ context.payload }}"
+          echo ${{ context.payload }}
