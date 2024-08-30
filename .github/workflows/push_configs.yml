@@ -24,4 +24,4 @@ jobs:
 
       - name: Print Paths
         run: |
-          echo "Triggered paths: "
+          echo "${{ json_encode(context.payload) }}"
