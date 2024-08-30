@@ -7,6 +7,9 @@ on:
 
 env:
   AWS_REGION: "us-east-1"
+  ACCOUNT_IDS:
+    aisdev: "780517085903"
+    osprod: "947476294539"
 
 permissions:
   id-token: write # This is required for requesting the JWT from AWS
