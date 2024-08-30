@@ -24,5 +24,4 @@ jobs:
 
       - name: Print Paths
         run: |
-          paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
-          echo "Triggered paths: $paths"
+          echo "Triggered paths: "
