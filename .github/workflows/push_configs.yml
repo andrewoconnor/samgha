@@ -45,7 +45,7 @@ jobs:
           SOURCE_DIR="aisdev"
           TARGET_BUCKET=$(basename $SOURCE_DIR)-sre-config
           ACCOUNT_VAR=$(basename $SOURCE_DIR | tr '[:lower:]' '[:upper:]')
-          ACCOUNT_ID="${!VAR}"
+          ACCOUNT_ID="${!ACCOUNT_VAR}"
           echo $SOURCE_DIR
           echo $TARGET_BUCKET
           echo $ACCOUNT_VAR
