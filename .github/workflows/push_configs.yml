@@ -7,9 +7,8 @@ on:
 
 env:
   AWS_REGION: "us-east-1"
-  ACCOUNT_IDS:
-    aisdev: "780517085903"
-    osprod: "947476294539"
+  AISDEV: "780517085903"
+  OSPROD: "947476294539"
 
 permissions:
   id-token: write # This is required for requesting the JWT from AWS
@@ -25,4 +24,5 @@ jobs:
 
       - name: Print Paths
         run: |
-          echo "Triggered paths: "
+          paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
+          echo "Triggered paths: $paths"
