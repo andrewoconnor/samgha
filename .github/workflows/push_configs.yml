@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Print Paths
-      run: |
-        paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
-        echo "Triggered paths: $paths"
+      - name: Print Paths
+        run: |
+          paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
+          echo "Triggered paths: $paths"
