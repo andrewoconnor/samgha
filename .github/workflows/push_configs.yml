@@ -49,5 +49,5 @@ jobs:
           echo $SOURCE_DIR
           echo $TARGET_BUCKET
           echo $ACCOUNT_VAR
-          echi $ACCOUNT_ID
+          echo $ACCOUNT_ID
 
