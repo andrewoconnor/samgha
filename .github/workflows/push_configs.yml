@@ -24,4 +24,4 @@ jobs:
 
       - name: Print Paths
         run: |
-          echo "${{ json_encode(context.payload) }}"
+          echo "${{ context.payload }}"
