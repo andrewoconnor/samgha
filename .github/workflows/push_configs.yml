@@ -19,3 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Print Paths
+        run: |
+          paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
+          echo "Triggered paths: $paths"
