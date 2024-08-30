@@ -1,0 +1,34 @@
+name: Upload config files to account specific S3 buckets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "config/osprod/**"
+  pull_request:
+    paths:
+      - "config/aisdev/**"
+
+env:
+  AWS_REGION: "us-east-1"
+  ACCOUNT_IDS:
+    aisdev: "780517085903"
+    osprod: "947476294539"
+
+permissions:
+  id-token: write # This is required for requesting the JWT from AWS
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Print Paths
+      run: |
+        paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
+        echo "Triggered paths: $paths"
