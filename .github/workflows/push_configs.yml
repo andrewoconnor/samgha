@@ -48,4 +48,5 @@ jobs:
           echo $SOURCE_DIR
           echo $TARGET_BUCKET
           echo $ACCOUNT_VAR
+          echo "The value of env.$ACCOUNT_VAR is: ${{ env.$ACCOUNT_VAR }}"
 
