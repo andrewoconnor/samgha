@@ -3,7 +3,7 @@ name: Upload config files to account specific S3 buckets
 on:
   pull_request:
     paths:
-      - 'config/**'
+      - 'config/aisdev/**'
 
 env:
   AWS_REGION: "us-east-1"
@@ -22,5 +22,4 @@ jobs:
 
       - name: Print Paths
         run: |
-          paths=$(echo "${{ json_encode(context.payload.repository.paths) }}")
-          echo "Triggered paths: $paths"
+          echo "Triggered paths: "
